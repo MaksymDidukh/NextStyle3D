@@ -273,11 +273,11 @@
         const f = (keys['KeyW']?1:0) + (keys['KeyS']?-1:0) + moveInput.forward;
         const r = (keys['KeyD']?1:0) + (keys['KeyA']?-1:0) + moveInput.right;
 
-        if (f !== 0 || r !== 0) {
-            const mv = new THREE.Vector3(r, 0, -f).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-            player.position.addScaledVector(mv, moveSpeed);
-            if (!isFirstPerson) player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, Math.atan2(mv.x, mv.z), 0.15);
-        }
+       if (f !== 0 || r !== 0) {
+    const mv = new THREE.Vector3(r, 0, -f).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+    player.position.addScaledVector(mv, moveSpeed);
+    if (!isFirstPerson) player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, Math.atan2(mv.x, -mv.z), 0.15);
+}
 
         vVel -= 0.012; player.position.y += vVel;
 

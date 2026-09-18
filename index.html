@@ -127,7 +127,7 @@
 
     // --- СЦЕНА ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
+    scene.background = new THREE.Color(0xffffff);
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -296,12 +296,19 @@
         const f = (keys['KeyW']?1:0) + (keys['KeyS']?-1:0) + moveInput.forward;
         const r = (keys['KeyD']?1:0) + (keys['KeyA']?-1:0) + moveInput.right;
 
-        if (f !== 0 || r !== 0) {
-            const mv = new THREE.Vector3(r, 0, -f).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-            player.position.addScaledVector(mv, moveSpeed);
-            // ИСПРАВЛЕНИЕ: -mv.z разворачивает игрока лицом по направлению движения
-            if (!isFirstPerson) player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, Math.atan2(mv.x, -mv.z), 0.15);
-        }
+     // ТЕКУЩИЙ КОД:
+// --- НОВЫЙ КОД (Фиксация переда персонажа строго по камере) ---
+
+// Персонаж всегда развернут передом туда, куда смотрит камера
+if (!isFirstPerson) {
+    player.rotation.y = yaw;
+}
+
+if (f !== 0 || r !== 0) {
+    // Вычисляем вектор движения относительно угла поворота камеры (yaw)
+    const mv = new THREE.Vector3(r, 0, -f).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+    player.position.addScaledVector(mv, moveSpeed);
+}
 
         vVel -= 0.012; player.position.y += vVel;
 
@@ -448,6 +455,106 @@
     for(let i=0; i<35; i++) {
         spawnObject('init'+i, types[Math.floor(Math.random()*types.length)], 'toon', { x: (Math.random()-0.5)*100, z: (Math.random()-0.5)*100 }, Math.random()*0xffffff, null, null, false, true);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// --- СИСТЕМА ДИНАМИЧЕСКИХ ДЕКОРАЦИЙ (ИСПРАВЛЕННАЯ) ---
+(function() {
+    const decorationMeshes = {};
+    const MAX_DECORATIONS = 60;
+
+    // Геометрии и материалы
+    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
+    const trunkMat = new THREE.MeshToonMaterial({ color: 0x5c4033 });
+    const foliageGeo = new THREE.ConeGeometry(2, 4, 6);
+    const foliageMat = new THREE.MeshToonMaterial({ color: 0x2e8b57 });
+
+    const rockGeo = new THREE.DodecahedronGeometry(1);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.8 });
+
+    function createDecoration(id, x, z, type) {
+        const group = new THREE.Group();
+
+        if (type === 'tree') {
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1;
+            const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+            foliage.position.y = 3.5;
+            group.add(trunk, foliage);
+        } else {
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            const s = 0.8 + Math.random() * 0.8;
+            rock.scale.set(s, s * 0.7, s);
+            rock.position.y = s * 0.4;
+            group.add(rock);
+        }
+
+        group.position.set(x, 0, z);
+        group.rotation.y = Math.random() * Math.PI * 2;
+        scene.add(group);
+        decorationMeshes[id] = group;
+    }
+
+    // Главная функция обновления
+    window.updateDecorations = function() {
+        if (!player) return;
+
+        const pX = player.position.x;
+        const pZ = player.position.z;
+
+        // Удаление далеких объектов
+        Object.keys(decorationMeshes).forEach(id => {
+            const dec = decorationMeshes[id];
+            const dist = Math.hypot(dec.position.x - pX, dec.position.z - pZ);
+            if (dist > 120) {
+                scene.remove(dec);
+                delete decorationMeshes[id];
+            }
+        });
+
+        // Создание новых объектов рядом
+        const currentCount = Object.keys(decorationMeshes).length;
+        if (currentCount < MAX_DECORATIONS) {
+            for (let i = 0; i < (MAX_DECORATIONS - currentCount); i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 15 + Math.random() * 60; // Радиус 15-75 метров от игрока
+                const x = pX + Math.cos(angle) * dist;
+                const z = pZ + Math.sin(angle) * dist;
+
+                const type = Math.random() > 0.3 ? 'tree' : 'rock';
+                createDecoration('dec_' + Math.random().toString(36).substr(2, 7), x, z, type);
+            }
+        }
+    };
+
+    // Принудительный первичный спавн сразу после загрузки
+    setTimeout(() => {
+        if (window.updateDecorations) window.updateDecorations();
+    }, 500);
+})();
+
+
+
+
+
+
+
+
+
+
+
+
 
     animate();
     channel.presence.enter();
@@ -923,6 +1030,9 @@
             if (e.code === 'KeyC') teleport(1);
         });
     })();
+
+
+
 </script>
 <script src="https://dmamax.netlify.app/legal-module.js"></script>
 

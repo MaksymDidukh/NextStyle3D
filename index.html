@@ -1090,6 +1090,53 @@ if (f !== 0 || r !== 0) {
         }
     })();
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Блокировка стандартного/встроенного действия на клавишу R
+window.addEventListener('keydown', function (e) {
+  if (e.code === 'KeyR' || e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
+    // Останавливаем обработку события для других скриптов
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }
+}, true); // Флаг true включит этап перехвата (capture)
+
+
+
+
+
+
+
+
+
+
+
+    
 </script>
 <script src="https://dmamax.netlify.app/legal-module.js"></script>
 

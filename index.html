@@ -293,6 +293,10 @@
     function animate() {
         requestAnimationFrame(animate);
 
+        // --- ДОБАВЬТЕ ЭТУ СТРОКУ В НАЧАЛО animate() ---
+        if (window.updateEndlessWorld) window.updateEndlessWorld();
+        if (window.updateDecorations) window.updateDecorations();
+
         const f = (keys['KeyW']?1:0) + (keys['KeyS']?-1:0) + moveInput.forward;
         const r = (keys['KeyD']?1:0) + (keys['KeyA']?-1:0) + moveInput.right;
 
@@ -1031,7 +1035,60 @@ if (f !== 0 || r !== 0) {
         });
     })();
 
+// --- СИСТЕМА БЕСКОНЕЧНОЙ ГЕНЕРАЦИИ ТЕКСТУР/ОБЪЕКТОВ ПРИ БЕГЕ ---
+    (function() {
+        const generatedChunks = new Set();
+        const CHUNK_SIZE = 30; // Размер сетки генерации
+        const VIEW_DISTANCE = 3; // Радиус генерации вокруг игрока (в чанках)
 
+        // Возможные типы геометрий и стилей
+        const shapeTypes = ['cube', 'sphere', 'cone', 'torus', 'cylinder'];
+        const styles = ['toon', 'shiny', 'ghost'];
+
+        window.updateEndlessWorld = function() {
+            if (!player) return;
+
+            // Вычисляем текущий чанк игрока
+            const currentChunkX = Math.floor(player.position.x / CHUNK_SIZE);
+            const currentChunkZ = Math.floor(player.position.z / CHUNK_SIZE);
+
+            // Проходимся по чанкам в радиусе видимости
+            for (let cx = currentChunkX - VIEW_DISTANCE; cx <= currentChunkX + VIEW_DISTANCE; cx++) {
+                for (let cz = currentChunkZ - VIEW_DISTANCE; cz <= currentChunkZ + VIEW_DISTANCE; cz++) {
+                    const chunkKey = `${cx},${cz}`;
+
+                    // Если чанк еще не генерировался — создаем в нем новые объекты и декорации
+                    if (!generatedChunks.has(chunkKey)) {
+                        generatedChunks.add(chunkKey);
+                        spawnChunkContent(cx, cz);
+                    }
+                }
+            }
+        };
+
+        function spawnChunkContent(cx, cz) {
+            // Базовые координаты чанка
+            const startX = cx * CHUNK_SIZE;
+            const startZ = cz * CHUNK_SIZE;
+
+            // Количество объектов на чанк (от 1 до 3)
+            const count = 1 + Math.floor(Math.random() * 3);
+
+            for (let i = 0; i < count; i++) {
+                const posX = startX + Math.random() * CHUNK_SIZE;
+                const posZ = startZ + Math.random() * CHUNK_SIZE;
+                const objId = `gen_${cx}_${cz}_${i}_${Math.floor(Math.random()*1000)}`;
+
+                const type = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+                const style = styles[Math.floor(Math.random() * styles.length)];
+                const color = Math.floor(Math.random() * 0xffffff);
+                const height = 0.5 + Math.random() * 2.5;
+
+                // Создаем объект мира
+                spawnObject(objId, type, style, { x: posX, z: posZ }, color, height, 0, false, false);
+            }
+        }
+    })();
 
 </script>
 <script src="https://dmamax.netlify.app/legal-module.js"></script>

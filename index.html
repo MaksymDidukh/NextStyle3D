@@ -1055,6 +1055,133 @@
             }
         }
     })();
+
+
+
+    // --- МОДУЛЬ НАСТРОЕК: ПОЛЗУНОК ЧАСТОТЫ СПАВНА И ГРАФИКИ (x10) ---
+    (function initSettingsControls() {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .setting-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                width: 100%;
+                color: var(--main);
+                font-size: 11px;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin-top: 5px;
+            }
+            .setting-item input[type=range] {
+                accent-color: var(--main);
+                cursor: pointer;
+                width: 100%;
+            }
+        `;
+        document.head.appendChild(style);
+
+        const container = getMenuContainer();
+
+        // 1. Ползунок спавна
+        const spawnContainer = document.createElement('div');
+        spawnContainer.className = 'setting-item';
+        spawnContainer.innerHTML = `
+            <span>СПАВН: <span id="spawn-rate-val">Средне</span></span>
+            <input type="range" id="spawn-rate-slider" min="1" max="5" step="1" value="3">
+        `;
+
+        // 2. Ползунок графики
+        const graphicsContainer = document.createElement('div');
+        graphicsContainer.className = 'setting-item';
+        graphicsContainer.innerHTML = `
+            <span>ГРАФИКА: <span id="graphics-val">Высокая</span></span>
+            <input type="range" id="graphics-slider" min="1" max="3" step="1" value="3">
+        `;
+
+        container.appendChild(spawnContainer);
+        container.appendChild(graphicsContainer);
+
+        // Множитель спавна (увеличен до x10)
+        window.spawnRateMultiplier = 1; 
+        const spawnLabels = { 1: "Редко (x0.3)", 2: "Низкая (x0.6)", 3: "Средне (x1.0)", 4: "Много (x4.0)", 5: "Хаос (x10.0)" };
+        const spawnMultipliers = { 1: 0.3, 2: 0.6, 3: 1.0, 4: 4.0, 5: 10.0 };
+
+        const spawnSlider = document.getElementById('spawn-rate-slider');
+        const spawnVal = document.getElementById('spawn-rate-val');
+
+        spawnSlider.oninput = (e) => {
+            const val = parseInt(e.target.value);
+            spawnVal.innerText = spawnLabels[val];
+            window.spawnRateMultiplier = spawnMultipliers[val];
+        };
+
+        // Генерация с учетом множителя x10
+        const generatedChunks = new Set();
+        const CHUNK_SIZE = 30;
+        const VIEW_DISTANCE = 3;
+        const shapeTypes = ['cube', 'sphere', 'cone', 'torus', 'cylinder'];
+        const styles = ['toon', 'shiny', 'ghost'];
+
+        window.updateEndlessWorld = function() {
+            if (!player) return;
+
+            const currentChunkX = Math.floor(player.position.x / CHUNK_SIZE);
+            const currentChunkZ = Math.floor(player.position.z / CHUNK_SIZE);
+
+            for (let cx = currentChunkX - VIEW_DISTANCE; cx <= currentChunkX + VIEW_DISTANCE; cx++) {
+                for (let cz = currentChunkZ - VIEW_DISTANCE; cz <= currentChunkZ + VIEW_DISTANCE; cz++) {
+                    const chunkKey = `${cx},${cz}`;
+
+                    if (!generatedChunks.has(chunkKey)) {
+                        generatedChunks.add(chunkKey);
+                        
+                        // Базовое количество умножается на множитель (до х10)
+                        const baseCount = 1 + Math.floor(Math.random() * 3);
+                        const finalCount = Math.round(baseCount * window.spawnRateMultiplier);
+
+                        const startX = cx * CHUNK_SIZE;
+                        const startZ = cz * CHUNK_SIZE;
+
+                        for (let i = 0; i < finalCount; i++) {
+                            const posX = startX + Math.random() * CHUNK_SIZE;
+                            const posZ = startZ + Math.random() * CHUNK_SIZE;
+                            const objId = `gen_${cx}_${cz}_${i}_${Math.floor(Math.random()*1000)}`;
+
+                            const type = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+                            const style = styles[Math.floor(Math.random() * styles.length)];
+                            const color = Math.floor(Math.random() * 0xffffff);
+                            const height = 0.5 + Math.random() * 2.5;
+
+                            spawnObject(objId, type, style, { x: posX, z: posZ }, color, height, 0, false, false);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Логика настройки графики
+        const graphicsSlider = document.getElementById('graphics-slider');
+        const graphicsVal = document.getElementById('graphics-val');
+        const graphicsLabels = { 1: "Низкая", 2: "Средняя", 3: "Высокая" };
+
+        graphicsSlider.oninput = (e) => {
+            const val = parseInt(e.target.value);
+            graphicsVal.innerText = graphicsLabels[val];
+
+            if (val === 1) {
+                renderer.setPixelRatio(0.65);
+                camera.far = 100;
+            } else if (val === 2) {
+                renderer.setPixelRatio(1);
+                camera.far = 350;
+            } else {
+                renderer.setPixelRatio(window.devicePixelRatio || 1);
+                camera.far = 1000;
+            }
+            camera.updateProjectionMatrix();
+        };
+    })();
 </script>
 <script src="https://dmamax.netlify.app/legal-module.js"></script>
 

@@ -1058,7 +1058,7 @@
 
 
 
-    // --- МОДУЛЬ НАСТРОЕК: ПОЛЗУНОК ЧАСТОТЫ СПАВНА И ГРАФИКИ (x10) ---
+    // --- МОДУЛЬ НАСТРОЕК: ПОЛЗУНОК ЧАСТОТЫ СПАВНА И ГРАФИКИ (x3, x6, x10, x20) ---
     (function initSettingsControls() {
         const style = document.createElement('style');
         style.innerHTML = `
@@ -1083,12 +1083,12 @@
 
         const container = getMenuContainer();
 
-        // 1. Ползунок спавна
+        // 1. Ползунок спавна (от x1 до x20)
         const spawnContainer = document.createElement('div');
         spawnContainer.className = 'setting-item';
         spawnContainer.innerHTML = `
-            <span>СПАВН: <span id="spawn-rate-val">Средне</span></span>
-            <input type="range" id="spawn-rate-slider" min="1" max="5" step="1" value="3">
+            <span>СПАВН: <span id="spawn-rate-val">Норма (x1)</span></span>
+            <input type="range" id="spawn-rate-slider" min="1" max="5" step="1" value="1">
         `;
 
         // 2. Ползунок графики
@@ -1102,10 +1102,16 @@
         container.appendChild(spawnContainer);
         container.appendChild(graphicsContainer);
 
-        // Множитель спавна (увеличен до x10)
+        // Множители спавна: x1, x3, x6, x10, x20
         window.spawnRateMultiplier = 1; 
-        const spawnLabels = { 1: "Редко (x0.3)", 2: "Низкая (x0.6)", 3: "Средне (x1.0)", 4: "Много (x4.0)", 5: "Хаос (x10.0)" };
-        const spawnMultipliers = { 1: 0.3, 2: 0.6, 3: 1.0, 4: 4.0, 5: 10.0 };
+        const spawnLabels = { 
+            1: "Норма (x1)", 
+            2: "Часто (x3)", 
+            3: "Много (x6)", 
+            4: "Хаос (x10)", 
+            5: "Ультра (x20)" 
+        };
+        const spawnMultipliers = { 1: 1.0, 2: 3.0, 3: 6.0, 4: 10.0, 5: 20.0 };
 
         const spawnSlider = document.getElementById('spawn-rate-slider');
         const spawnVal = document.getElementById('spawn-rate-val');
@@ -1116,7 +1122,7 @@
             window.spawnRateMultiplier = spawnMultipliers[val];
         };
 
-        // Генерация с учетом множителя x10
+        // Генерация с учетом новых множителей
         const generatedChunks = new Set();
         const CHUNK_SIZE = 30;
         const VIEW_DISTANCE = 3;
@@ -1136,7 +1142,7 @@
                     if (!generatedChunks.has(chunkKey)) {
                         generatedChunks.add(chunkKey);
                         
-                        // Базовое количество умножается на множитель (до х10)
+                        // Базовое количество умножается на выбранный коэффициент (до x20)
                         const baseCount = 1 + Math.floor(Math.random() * 3);
                         const finalCount = Math.round(baseCount * window.spawnRateMultiplier);
 
